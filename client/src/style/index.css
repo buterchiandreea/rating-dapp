@@ -1,0 +1,123 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto&display=swap');
+
+:root {
+    --header-background: white;
+    --header-border: #e2e5e9;
+    --wrapper-background: linear-gradient(to right bottom, #6a5c71, #6d687f, #70748c, #728098, #758ca2, #7693a8, #789bae, #7aa2b3, #7aa7b6, #7aacb9, #7bb0bc, #7cb5be);
+}  
+
+body {
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: white;
+    font-family: 'Roboto', sans-serif;
+}
+
+pre {
+    white-space: pre-wrap;      
+    white-space: -moz-pre-wrap;  
+    white-space: -pre-wrap;      
+    white-space: -o-pre-wrap;    
+    word-wrap: break-word; 
+}
+
+button {
+    border: none;
+    outline: none;
+    background: transparent;
+}
+
+.btn {
+    text-decoration: none;
+    color: white;
+}
+
+.btn:hover {
+    opacity: 0.5;
+}
+
+.btn-icon {
+    width: 15px;
+    vertical-align: middle;
+    display: inline-block;
+}
+
+.btn-txt {
+    vertical-align: middle;
+}
+
+.login-btn {
+    padding: 5px 10px;
+    border-radius: 5px;
+    border-style: solid;
+    border-width: thin;
+}
+
+.header {
+    overflow: hidden;
+    background-color: var(--header-background);
+    padding-left: 20%;
+    padding-right: 20%;
+    align-items: center;
+    justify-content: center;
+    border-bottom: 1px solid var(--header-border);
+    height: 80px;
+}
+
+.header-logo {
+    padding-top: 15px;
+    display: inline-block;
+}
+
+.header-wrapper {
+    display: grid;
+    background-image: var(--wrapper-background);
+    width: 100%;
+    height: 450px;
+}
+
+.side-wrapper {
+    min-height: 100vh;
+    width: 400px;
+    background-image: var(--wrapper-background);
+}
+
+.logout-btn {
+    text-decoration: none;
+    padding-top: 25px;
+    display: inline-block;
+    color: black;
+}
+
+.logout-btn:hover {
+    opacity: 0.5;
+}
+
+.disabled {
+    pointer-events: none;
+}
+
+.card:hover {
+    opacity: 0.5;
+}
+
+.card {
+    background-color: white;
+    display: inline-block;
+    margin-right: 1.5em;
+    margin-left: 1.5em;
+    box-shadow: 0 19px 38px rgba(0, 0, 0, 0.3), 0 15px 12px rgba(0, 0, 0, 0.3);
+}
+
+.card-footer {
+    width: '130px';
+    height: '50px'; 
+    background-color: #6a5c71;
+}
+
+.login-form {
+    width: auto;
+    height: '200px';
+    background-color: #6a5c71;
+}
