@@ -11,6 +11,7 @@ import Paper from '@material-ui/core/Paper'
 import RateInput from "../components/RateInput";
 import UpRateButton from "../components/UpRateButton";
 import DownRateButton from "../components/DownRateButton";
+import CryptoJS from 'crypto-js';
 
 
 class Rate extends Component {
@@ -34,11 +35,9 @@ class Rate extends Component {
         refresh: true
     };
 
-    this.rateItem = this.rateItem.bind(this);
+    this.rate = this.rate.bind(this);
     this.handleUpVote = this.handleUpVote.bind(this);
     this.handleDownVote = this.handleDownVote.bind(this);
-    this.getItemInformation = this.getItemInformation.bind(this);
-    this.getRatingStatus = this.getRatingStatus.bind(this);
     this.handleUserIDChange = this.handleUserIDChange.bind(this);
     this.handleUserProviderChange = this.handleUserProviderChange.bind(this);
     this.checkURL = this.checkURL.bind(this);
@@ -49,7 +48,7 @@ class Rate extends Component {
 
   handleChange = (event) => {
     const { target: { name, value } } = event;
-    this.setState({ inputValue: value});
+    this.setState({ inputValue: value.trim()});
   }
 
   handleUpVote() {
@@ -103,7 +102,7 @@ class Rate extends Component {
         this.setState({ ratingContract: rating });
 
     } else {
-        window.alert('Contract is not deployed to the detected network.');
+        window.alert('The smart contract was not deployed to the detected network.');
     }
 
     this.setState({ loading: false });
@@ -116,13 +115,14 @@ class Rate extends Component {
     let i;
     for (i = 0; i < numberOfResources; i++) {
       let res = await this.state.ratingContract.methods.getRatedResource(i).call();
-      resources.push(window.web3.toAscii(res));
+      resources.push(res.toString());
     }
     let rows = [];
     for (i = 0; i < resources.length; i++) {
-      const status = await this.state.ratingContract.methods.usersToResources(window.web3.fromAscii(this.state.id), window.web3.fromAscii(resources[i])).call();
+      let credentials = window.web3.utils.asciiToHex(CryptoJS.MD5(this.state.id).toString());
+      const status = await this.state.ratingContract.methods.usersToResources(credentials, resources[i].toString()).call();
       if (status) {
-        const votes = await this.state.ratingContract.methods.getResourceInformation(window.web3.fromAscii(resources[i])).call();
+        const votes = await this.state.ratingContract.methods.getResourceInformation(resources[i].toString()).call();
         rows.push(this.createData(resources[i], votes[0], votes[1]));
       }
     }
@@ -140,38 +140,27 @@ class Rate extends Component {
     }
   }
 
-  rateItem(resource, vote) {
+  rate(credentials, resource, vote) {
     this.setState({ loading: true });
-    this.state.ratingContract.methods.rateItem(String(this.state.id), String(resource), vote).send({ from: this.state.account })
+    this.state.ratingContract.methods.rate(credentials, resource, vote).send({ from: this.state.account })
     .on('error', function (error) { window.alert(error.message); })
     .once('receipt', (receipt) => {
-        console.log(receipt);
         this.setState({ loading: false });
     })
   }
 
-  async getItemInformation(credentials, resource) {
-    const itemInformation = await this.state.ratingContract.methods.ratingsInformation(window.web3.fromAscii(credentials), window.web3.fromAscii(resource)).call();
-    return itemInformation;
-  }
-
-  async getRatingStatus(credentials, resource) {
-    const status = await this.state.ratingContract.methods.usersToResources(window.web3.fromAscii(credentials), window.web3.fromAscii(resource)).call();
-    return status;
-  }
-
   checkRatingProcess(credentials, resource, vote, provider) {
-    const itemInformation = this.state.ratingContract.methods.ratingsInformation(window.web3.fromAscii(credentials), window.web3.fromAscii(resource)).call();
-    const status = this.state.ratingContract.methods.usersToResources(window.web3.fromAscii(credentials), window.web3.fromAscii(resource)).call();
+    const itemInformation = this.state.ratingContract.methods.ratingsInformation(credentials, resource).call();
+    const status = this.state.ratingContract.methods.usersToResources(credentials, resource).call();
     Promise.all([itemInformation, status]).then(values => { 
       let itemInformation = values[0];
       let isRated = values[1];
       if (!this.checkURL(provider, resource)) {
-        window.alert('The resource you are providing is not valid.');
+        window.alert('Invalid resource.');
       } else if (isRated && (itemInformation === vote)) {
-        window.alert('You have already voted this item.');
+        window.alert('Multiple ratings for the same resource are not allowed.');
       } else {
-        this.rateItem(resource, vote);
+        this.rate(credentials, resource, vote);
       }
     });
   }
@@ -181,38 +170,45 @@ class Rate extends Component {
     let pos = [];
     let rows = [];
 
-    this.state.ratingContract.methods.getRatedResources().call()
+    this.state.ratingContract.methods.getNumberOfRatedResources().call()
       .then((result) => {
         if (result !== null) {
-          for (let i = 0; i < result.length; i++) {
-            res.push(window.web3.toAscii(result[i]));
-          }
           let promises = [];
-          for(let i = 0; i < result.length; i++) {
-            let promise = this.state.ratingContract.methods.usersToResources(window.web3.fromAscii(credentials), window.web3.fromAscii(result[i])).call();
+          for (let i = 0; i < result; i++) {
+            let promise = this.state.ratingContract.methods.getRatedResource(i).call();
             promises.push(promise);
           }
-          Promise.all(promises).then(values => { 
-            console.log('What you see is what you get: ', values);
-            for (let i = 0; i < values.length; i++) {
-              if (values[i] === true) {
-                pos.push(i);
-              }
+
+          Promise.all(promises).then(resources => { 
+            for (let i = 0; i < resources.length; i++) {
+              res.push(resources[i].toString());
             }
-  
+
             let promises = [];
-            for(let i = 0; i < pos.length; i++) {
-              console.log('What is happening here: ', res[pos[i]]);
-              let promise = this.state.ratingContract.methods.getResourceInformation(window.web3.toAscii(res[pos[i]])).call();
+            for(let i = 0; i < resources.length; i++) {
+              let promise = this.state.ratingContract.methods.usersToResources(credentials, resources[i]).call();
               promises.push(promise);
             }
-            
+
             Promise.all(promises).then(values => { 
               for (let i = 0; i < values.length; i++) {
-                rows.push(this.createData(res[pos[i]], values[i][0], values[i][1]));
+                if (values[i] === true) {
+                  pos.push(i);
+                }
               }
-              console.log(rows);
-              this.setState({ rows });
+    
+              let promises = [];
+              for(let i = 0; i < pos.length; i++) {
+                let promise = this.state.ratingContract.methods.getResourceInformation(res[pos[i]].toString()).call();
+                promises.push(promise);
+              }
+              
+              Promise.all(promises).then(values => { 
+                for (let i = 0; i < values.length; i++) {
+                  rows.push(this.createData(res[pos[i]], values[i][0], values[i][1]));
+                }
+                this.setState({ rows });
+              });
             });
           });
         }
@@ -257,10 +253,9 @@ class Rate extends Component {
                   onSubmit={(event) => {
                                   event.preventDefault();
                                   let resource = this.state.resource.toString();
-                                  console.log('Resource in onSubmit: ', this.state.resource)
-                                  console.log('Provider is: ', this.state.provider);
-                                  this.checkRatingProcess(this.state.id, resource, vote, this.state.provider);
-                                  this.fillTable(this.state.id);
+                                  let credentials = window.web3.utils.asciiToHex(CryptoJS.MD5(this.state.id).toString());
+                                  this.checkRatingProcess(credentials, resource, vote, this.state.provider);
+                                  this.fillTable(credentials);
                   }} 
                   style={{ width: 'auto' }}
                 >

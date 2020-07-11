@@ -1,24 +1,23 @@
 pragma solidity 0.5.16;
 
 contract Rating {
-    
     struct resourceRating {
         uint256 likes;
         uint256 dislikes;
     }
 
-    bytes32[] public resources;
-    mapping (bytes32 => resourceRating) public resourcesInformation;
-    mapping (bytes32 => bool) public ratedResources;
-    mapping (bytes32 => mapping (bytes32 => bool)) public ratingsInformation;
-    mapping (bytes32 => mapping (bytes32 => bool)) public usersToResources;
+    string[] public resources;
+    mapping(string => resourceRating) public resourcesInformation;
+    mapping(string => bool) public ratedResources;
+    mapping(bytes32 => mapping(string => bool)) public ratingsInformation;
+    mapping(bytes32 => mapping(string => bool)) public usersToResources;
 
     event LogSuccessfullyRatedItem(string message);
     event LogNoMultipleVotesAllowed(string errorMessage);
 
     function rate(
         bytes32 _credentials,
-        bytes32 _resourceID,
+        string memory _resourceID,
         bool _vote
     ) public {
         if (usersToResources[_credentials][_resourceID] == true) {
@@ -47,13 +46,13 @@ contract Rating {
                     resourcesInformation[_resourceID] = resourceRating(1, 0);
                     ratingsInformation[_credentials][_resourceID] = true;
                     emit LogSuccessfullyRatedItem(
-                        "Item was successfully rated."
+                        "Resource was successfully rated."
                     );
                 } else {
                     resourcesInformation[_resourceID] = resourceRating(0, 1);
                     ratingsInformation[_credentials][_resourceID] = false;
                     emit LogSuccessfullyRatedItem(
-                        "Item was successfully rated."
+                        "Resource was successfully rated."
                     );
                 }
             } else {
@@ -61,19 +60,19 @@ contract Rating {
                 if (_vote == true) {
                     resourcesInformation[_resourceID].likes += 1;
                     emit LogSuccessfullyRatedItem(
-                        "Item was successfully rated."
+                        "Resource was successfully rated."
                     );
                 } else {
                     resourcesInformation[_resourceID].dislikes += 1;
                     emit LogSuccessfullyRatedItem(
-                        "Item was successfully rated."
+                        "Resource was successfully rated."
                     );
                 }
             }
         }
     }
 
-    function getResourceInformation(bytes32 _resourceID)
+    function getResourceInformation(string memory _resourceID)
         public
         view
         returns (uint256, uint256)
@@ -88,11 +87,11 @@ contract Rating {
         return resources.length;
     }
 
-    function getRatedResource(uint256 _index) public view returns (bytes32) {
+    function getRatedResource(uint256 _index)
+        public
+        view
+        returns (string memory)
+    {
         return resources[_index];
-    }
-
-    function getRatedResources() public view returns (bytes32[] memory) {
-        return resources;
     }
 }
