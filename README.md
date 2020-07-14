@@ -51,6 +51,8 @@ Now the credentials (Client ID and Client Secret) should be visible on the webpa
 
 Now the credentials (Client ID and Client Secret) should be visible on the webpage.
 
+A complete guide can be accessed [here](https://developer.spotify.com/documentation/general/guides/app-settings/).
+
 In order to create the OAuth credentials, you need to have an **active account** on Google, Github and Spotify.
 
 ### Dependencies
