@@ -32,7 +32,7 @@ const Home = () => {
             </div>
             <Grid item xs={3}>
             </Grid>
-            <Grid spacing={3} item xs={6} style={{ marginTop: -200, alignItems: 'center', textAlign: 'center' }}>
+            <Grid item xs={6} style={{ marginTop: -200, alignItems: 'center', textAlign: 'center' }}>
               <Paper className={classes.paper}>
                 <div className='login-form'>
                   <Typography style={{ fontSize: 32, color: 'white' }}>

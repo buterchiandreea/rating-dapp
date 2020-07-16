@@ -11,6 +11,7 @@ import Paper from '@material-ui/core/Paper'
 import RateInput from "../components/RateInput";
 import UpRateButton from "../components/UpRateButton";
 import DownRateButton from "../components/DownRateButton";
+import RatingModal from "../components/RatingModal";
 import CryptoJS from 'crypto-js';
 
 
@@ -66,6 +67,8 @@ class Rate extends Component {
   async componentDidMount() {
     await this.loadWeb3();
     await this.loadBlockchainData();
+    let credentials = window.web3.utils.asciiToHex(CryptoJS.MD5(this.state.id).toString());
+    await this.fillTable(credentials);
   }
 
   handleUserIDChange(updatedID) {
@@ -120,6 +123,7 @@ class Rate extends Component {
     let rows = [];
     for (i = 0; i < resources.length; i++) {
       let credentials = window.web3.utils.asciiToHex(CryptoJS.MD5(this.state.id).toString());
+      console.log('cine este state.id: ', this.state.id);
       const status = await this.state.ratingContract.methods.usersToResources(credentials, resources[i].toString()).call();
       if (status) {
         const votes = await this.state.ratingContract.methods.getResourceInformation(resources[i].toString()).call();
@@ -208,6 +212,7 @@ class Rate extends Component {
                   rows.push(this.createData(res[pos[i]], values[i][0], values[i][1]));
                 }
                 this.setState({ rows });
+                console.log('These are the rows: ', rows);
               });
             });
           });
@@ -255,7 +260,6 @@ class Rate extends Component {
                                   let resource = this.state.resource.toString();
                                   let credentials = window.web3.utils.asciiToHex(CryptoJS.MD5(this.state.id).toString());
                                   this.checkRatingProcess(credentials, resource, vote, this.state.provider);
-                                  this.fillTable(credentials);
                   }} 
                   style={{ width: 'auto' }}
                 >
@@ -281,6 +285,7 @@ class Rate extends Component {
                       </DownRateButton>
                     </div>
                   </form>
+                  <RatingModal rows={this.state.rows} fct={this.state.fillTable} ></RatingModal>
               </Paper> 
             </Grid>
             <Grid item xs={4}>

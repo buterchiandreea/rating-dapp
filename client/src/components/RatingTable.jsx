@@ -21,7 +21,8 @@ const useStyles = makeStyles({
     justifyContent: 'center',
   },
   container: {
-    maxHeight: 440,
+    width: 'auto', 
+    height: 'auto',
     justifyContent: 'center',
   },
   justifyContent: 'center',
