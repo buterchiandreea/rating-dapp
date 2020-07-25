@@ -30,6 +30,8 @@ The application encapsulates an authentication module which needs valid credenti
 
 Now the credentials (Client ID and Client Secret) should be visible on the webpage.
 
+Based on the same steps, create an API Key also. The API Key should be inserted in this [file](https://github.com/buterchiandreea/rating-dapp/blob/master/client/src/data/credentials.js).
+
 #### Steps to create an OAuth Client ID for Github
 * Go to the Github [webpage](https://github.com/).
 * Click on the top right icon and select **Settings** from the menu.
