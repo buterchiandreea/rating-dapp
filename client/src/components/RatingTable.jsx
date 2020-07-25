@@ -17,12 +17,14 @@ const columns = [
 
 const useStyles = makeStyles({
   root: {
-    width: '70%', 
+    width: 'auto',
+    height: 'auto', 
     justifyContent: 'center',
   },
   container: {
     width: 'auto', 
     height: 'auto',
+    minHeight: '150px', 
     justifyContent: 'center',
   },
   justifyContent: 'center',
@@ -44,7 +46,7 @@ const RatingTable = ( props ) => {
   };
 
   return (
-    <Paper className={classes.root} style={{marginTop: 100}}>
+    <Paper className={classes.root} style={{ marginTop: 50 }}>
       <TableContainer className={classes.container}>
         <Table stickyHeader aria-label="sticky table">
           <TableHead>
@@ -61,9 +63,9 @@ const RatingTable = ( props ) => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {props.rows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => {
+            {props.rows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row, i) => {
               return (
-                <TableRow hover role="checkbox" tabIndex={-1} key={row.code}>
+                <TableRow hover role="checkbox" tabIndex={-1} key={i}>
                   {columns.map((column) => {
                     const value = row[column.id];
                     return (

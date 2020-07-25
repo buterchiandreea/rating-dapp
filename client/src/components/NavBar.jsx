@@ -1,54 +1,51 @@
 
-import React, { useContext } from "react";
+import React, { Component } from "react";
 import Typography from '@material-ui/core/Typography';
-import UserProvider from '../contexts/UserProvider';
 import _ from "lodash";
-import { makeStyles } from "@material-ui/core/styles";
 import Icon from "@material-ui/core/Icon";
 
-const useStyles = makeStyles(theme => ({
-  root: {
-    "& > span": {
-      margin: theme.spacing(2)
+class NavBar extends Component {
+
+    constructor(props) {
+        super(props);
+        this.state = {
+            userData: {}
+        };
     }
-  }
-}));
 
-const NavBar = () => {
-    const userData = useContext(UserProvider.context);
-    const classes = useStyles();
+    async componentDidMount() {
+        fetch('/user')
+            .then(res => res.json())
+            .then(res => { 
+                this.setState({ userData: res });
+            })
+            .catch(err => { 
+                console.log(err);
+            });
+      }
 
-    return (
-        <div className='header' style={{ justifyContent: 'center' }}>
-            
-            <Typography className='header-logo' style={{float: 'left', fontSize: 28, fontWeight: 'bold', color: '#6a5c71'}}> Rating DApp </Typography>
-            
-            {
-                !_.isEmpty(userData) &&
-                <a
-                    className="logout-btn"
-                    href={"/auth/logout"}
-                    style={{ float: "right" }}
-                >
-                    <div className={classes.root}>
-                        <Icon style={{ fontSize: 20, color: '#6a5c71' }}>Logout</Icon>
-                    </div>
-                </a>
-            }
-            {
-                !_.isEmpty(userData) &&
-                <a
-                    className="logout-btn"
-                    href={"/auth/logout"}
-                    style={{ float: "right" }}
-                >
-                    <div className={classes.root}>
-                        <Icon style={{ fontSize: 20, color: '#6a5c71' }}>Ratings</Icon>
-                    </div>
-                </a>
-            }
-        </div>
-    );
+    render() {
+        return (
+            <div className='header' style={{ justifyContent: 'center' }}>
+                
+                <Typography className='header-logo' style={{float: 'left', fontSize: 28, fontWeight: 'bold', color: '#6a5c71'}}> Rating DApp </Typography>
+                
+                {
+                    !_.isEmpty(this.state.userData) &&
+                    <a
+                        className="logout-btn"
+                        href={"/auth/logout"}
+                        style={{ float: "right" }}
+                    >
+                        <div style={{ margin: '10px', marginTop: '1px' }}>
+                            <Icon style={{ fontSize: 24, color: '#6a5c71' }}>Logout</Icon>
+                        </div>
+                    </a>
+                }
+
+            </div>
+        );
+    };
 };
 
 

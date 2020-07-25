@@ -1,8 +1,6 @@
 import React from 'react';
 import { makeStyles } from '@material-ui/core/styles';
 import Typography from '@material-ui/core/Typography';
-import { useContext } from "react";
-import UserProvider from "../contexts/UserProvider";
 import { Component } from "react";
 import Web3 from 'web3';
 import Rating from '../contracts/Rating.json';
@@ -11,9 +9,9 @@ import Paper from '@material-ui/core/Paper'
 import RateInput from "../components/RateInput";
 import UpRateButton from "../components/UpRateButton";
 import DownRateButton from "../components/DownRateButton";
-import RatingModal from "../components/RatingModal";
 import CryptoJS from 'crypto-js';
-
+import { GOOGLE } from '../data/credentials';
+import { Link } from 'react-router-dom';
 
 class Rate extends Component {
 
@@ -29,27 +27,19 @@ class Rate extends Component {
         emptyResource: false, 
         ratedResources: [], 
         numberOfResources: 0, 
-        provider: '', 
-        id: '', 
         inputValue: '', 
         rows: [], 
-        refresh: true
+        refresh: true, 
+        userData: {}
     };
 
     this.rate = this.rate.bind(this);
     this.handleUpVote = this.handleUpVote.bind(this);
     this.handleDownVote = this.handleDownVote.bind(this);
-    this.handleUserIDChange = this.handleUserIDChange.bind(this);
-    this.handleUserProviderChange = this.handleUserProviderChange.bind(this);
-    this.checkURL = this.checkURL.bind(this);
+    this.checkResourceProvenience = this.checkResourceProvenience.bind(this);
     this.checkRatingProcess = this.checkRatingProcess.bind(this);
     this.fillTable = this.fillTable.bind(this);
-    this.handleRefreshTable = this.handleRefreshTable(this);
-  }
-
-  handleChange = (event) => {
-    const { target: { name, value } } = event;
-    this.setState({ inputValue: value.trim()});
+    this.handleRatingCases = this.handleRatingCases.bind(this);
   }
 
   handleUpVote() {
@@ -60,32 +50,20 @@ class Rate extends Component {
     this.setState({ vote: false, resource: this.state.inputValue, inputValue: '' });
   }
 
-  handleRefreshTable() {
-    this.setState({ refresh: true});
-  }
-
   async componentDidMount() {
     await this.loadWeb3();
     await this.loadBlockchainData();
-    let credentials = window.web3.utils.asciiToHex(CryptoJS.MD5(this.state.id).toString());
-    await this.fillTable(credentials);
-  }
 
-  handleUserIDChange(updatedID) {
-    this.setState({ id: updatedID });
-  }
-
-  handleUserProviderChange(updatedProvider) {
-    this.setState({ provider: updatedProvider });
-  }
-
-  componentDidUpdate(prevProps, prevState) {
-    if (prevProps.userData.id !== this.props.userData.id) {
-      this.handleUserIDChange(this.props.userData.id);
-    }
-    if (prevProps.userData.provider !== this.props.userData.provider) {
-      this.handleUserProviderChange(this.props.userData.provider);
-    }
+    fetch('/user')
+        .then(res => res.json())
+        .then(res => { 
+          this.setState({ userData: res });
+          let credentials = window.web3.utils.asciiToHex(CryptoJS.MD5(this.state.userData.id).toString());
+          this.fillTable(credentials);
+        })
+        .catch(err => { 
+            console.log(err);
+        });
   }
 
   async loadBlockchainData() {
@@ -122,8 +100,7 @@ class Rate extends Component {
     }
     let rows = [];
     for (i = 0; i < resources.length; i++) {
-      let credentials = window.web3.utils.asciiToHex(CryptoJS.MD5(this.state.id).toString());
-      console.log('cine este state.id: ', this.state.id);
+      let credentials = window.web3.utils.asciiToHex(CryptoJS.MD5(this.state.userData.id).toString());
       const status = await this.state.ratingContract.methods.usersToResources(credentials, resources[i].toString()).call();
       if (status) {
         const votes = await this.state.ratingContract.methods.getResourceInformation(resources[i].toString()).call();
@@ -140,7 +117,7 @@ class Rate extends Component {
     } else if (window.web3) {
         window.web3 = new Web3(window.web3.currentProvider);
     } else {
-        window.alert('Enable Metamask.');
+        window.alert('Connect to Metamask.');
     }
   }
 
@@ -153,19 +130,69 @@ class Rate extends Component {
     })
   }
 
+  checkResourceProvenience(isResourceRated, resourceInformation, vote, credentials, resource, provider) {
+    switch(provider) {
+      case 'google':
+        let googleTokens = resource.split('=');
+        let googleURL = `https://www.googleapis.com/youtube/v3/videos?part=id&id=${googleTokens.pop()}&key=${GOOGLE.authorizationToken}`
+        fetch(googleURL)
+        .then(res => res.json())
+        .then(res => {
+          if (res.items.length === 0) {
+            this.handleRatingCases(false, isResourceRated, resourceInformation, vote, credentials, resource);
+          } else {
+            this.handleRatingCases(true, isResourceRated, resourceInformation, vote, credentials, resource);
+          }
+        })
+        .catch(err => { 
+            console.log(err);
+        });
+        break;
+      case 'github':
+        let githubTokens = resource.split('/');
+        let user = githubTokens[3];
+        let repository = githubTokens[4];
+        let githubURL = `https://api.github.com/repos/${user}/${repository}`
+        fetch(githubURL)
+        .then(res => res.json())
+        .then(res => {
+          if (res.name === repository) {
+            this.handleRatingCases(true, isResourceRated, resourceInformation, vote, credentials, resource);
+          } else {
+            this.handleRatingCases(false, isResourceRated, resourceInformation, vote, credentials, resource);
+          }
+        })
+        .catch(err => { 
+            console.log(err);
+        });
+        break;
+      default:
+        let isSpotifyURL = /^(spotify:|https:\/\/[a-z]+\.spotify\.com\/)/.test(resource);
+        this.handleRatingCases(isSpotifyURL, isResourceRated, resourceInformation, vote, credentials, resource);
+    }
+  }
+
+  handleRatingCases(isResourceValid, isResourceRated, resourceInformation, vote, credentials, resource) {
+    if (resource === '') {
+      window.alert('Can not rate an empty resource.');
+    } else if (isResourceValid === false) {
+      window.alert('Invalid resource.');
+    } else if (isResourceRated && (resourceInformation === vote)) {
+      window.alert('Multiple ratings for the same resource are not allowed.');
+    } else {
+      this.rate(credentials, resource, vote);
+    }
+  }
+
   checkRatingProcess(credentials, resource, vote, provider) {
-    const itemInformation = this.state.ratingContract.methods.ratingsInformation(credentials, resource).call();
-    const status = this.state.ratingContract.methods.usersToResources(credentials, resource).call();
-    Promise.all([itemInformation, status]).then(values => { 
-      let itemInformation = values[0];
-      let isRated = values[1];
-      if (!this.checkURL(provider, resource)) {
-        window.alert('Invalid resource.');
-      } else if (isRated && (itemInformation === vote)) {
-        window.alert('Multiple ratings for the same resource are not allowed.');
-      } else {
-        this.rate(credentials, resource, vote);
-      }
+    const resourceInformation = this.state.ratingContract.methods.ratingsInformation(credentials, resource).call();
+    const isResourceRated = this.state.ratingContract.methods.usersToResources(credentials, resource).call();
+
+    Promise.all([resourceInformation, isResourceRated]).then(values => { 
+      let resourceInformation = values[0];
+      let isResourceRated = values[1];
+      
+      this.checkResourceProvenience(isResourceRated, resourceInformation, vote, credentials, resource, provider);
     });
   }
 
@@ -212,7 +239,6 @@ class Rate extends Component {
                   rows.push(this.createData(res[pos[i]], values[i][0], values[i][1]));
                 }
                 this.setState({ rows });
-                console.log('These are the rows: ', rows);
               });
             });
           });
@@ -220,20 +246,14 @@ class Rate extends Component {
       });
   }
 
-  checkURL(provider, URL) {
-    if (provider.toLowerCase() === 'google') {
-      return URL.includes('youtube');
-    } else {
-      return URL.includes(provider.toLowerCase());
-    }
-  }
-
   createData(resource, likes, dislikes) {
     return { resource, likes, dislikes };
   }
 
   render() {
-    const { vote, inputValue } = this.state;
+    const { vote } = this.state;
+    const rightArrow = <React.Fragment>&#xbb;</React.Fragment>
+
     return (
         <div className={this.props.c.root}>
 
@@ -246,6 +266,18 @@ class Rate extends Component {
             <Grid item xs={4}>
             </Grid>
             <Grid item xs={4} style={{ marginTop: -200, alignItems: 'center', textAlign: 'center' }}>
+              <div style={{ textAlign: 'center' }}>
+                <Link to={{
+                              pathname: '/ratings',
+                              state: {
+                                rows: this.state.rows
+                              }
+                            }}
+                      style={{ textDecoration: 'none', color: 'white', fontSize: 24, fontWeight: 'bold', marginTop: 50 }}
+                    >
+                      See ratings {rightArrow}
+                </Link>
+              </div>
               <Paper 
                 className={this.props.c.paper}
               >
@@ -258,16 +290,17 @@ class Rate extends Component {
                   onSubmit={(event) => {
                                   event.preventDefault();
                                   let resource = this.state.resource.toString();
-                                  let credentials = window.web3.utils.asciiToHex(CryptoJS.MD5(this.state.id).toString());
-                                  this.checkRatingProcess(credentials, resource, vote, this.state.provider);
+                                  let credentials = window.web3.utils.asciiToHex(CryptoJS.MD5(this.state.userData.id).toString());
+                                  this.checkRatingProcess(credentials, resource, vote, this.state.userData.provider);
+                                  this.fillTable(credentials);
                   }} 
                   style={{ width: 'auto' }}
                 >
                     <div style={{ marginTop: 85, alignItems: 'center' }}>
                       <RateInput
                           name="resource"
-                          value={inputValue}
-                          onChange={this.handleChange}
+                          value={this.state.inputValue}
+                          onChange={(e)=>{this.setState({inputValue: e.target.value.trim()})}}
                         >
                       </RateInput>
                     </div>
@@ -285,7 +318,6 @@ class Rate extends Component {
                       </DownRateButton>
                     </div>
                   </form>
-                  <RatingModal rows={this.state.rows} fct={this.state.fillTable} ></RatingModal>
               </Paper> 
             </Grid>
             <Grid item xs={4}>
@@ -302,17 +334,17 @@ const useStyles = makeStyles((theme) => ({
     alignContent: 'strech', 
   }, 
   paper: {
-    height: '450px'
+    height: '400px', 
+    marginTop: 40
   }
 }));
 
  
 const RateWrapper = () => {
-    const userData = useContext(UserProvider.context);
     const classes = useStyles();
     return (
         <div>
-          <Rate userData={userData} c={classes}/>
+          <Rate c={classes}/>
         </div>
     );
 };

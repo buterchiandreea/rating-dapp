@@ -1,10 +1,11 @@
 const express = require('express');
 const cors = require('cors');
 const passport = require('passport');
-const strategyKeys = require('../config');
+const strategyKeys = require('./config');
 const GoogleStrategy = require('passport-google-oauth2').Strategy;
 const GithubStrategy = require('passport-github').Strategy;
 const SpotifyStrategy = require('passport-spotify').Strategy;
+
 
 /* An object that holds the data returned by a specific strategy */
 let user = {};

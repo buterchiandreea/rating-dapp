@@ -35,6 +35,7 @@ const RateInput = (props) => {
           style={{ width: '400px' }}
           type={props.type}
           onChange={props.onChange}
+          value={props.value}
         />
     </ThemeProvider>
   );
